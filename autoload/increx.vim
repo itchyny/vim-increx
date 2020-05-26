@@ -2,7 +2,7 @@
 " Filename: autoload/increx.vim
 " Author: itchyny
 " License: MIT License
-" Last Change: 2015/09/27 20:24:46.
+" Last Change: 2020/05/26 15:48:51.
 " =============================================================================
 
 let s:save_cpo = &cpo
@@ -42,13 +42,15 @@ function! increx#incr(count) abort
       endif
     endfor
   endfor
-  if pos >= 0 && !isdigit
+  if pos < 0
+    return
+  elseif isdigit
+    execute 'normal! ' . abs(a:count) . (a:count > 0 ? "\<C-a>" : "\<C-x>")
+  else
     silent! call setline('.', (pos > 0 ? line[:pos - 1] : '') . to . line[pos + len(from):])
     let curpos = getcurpos()
     let curpos[2] = pos + len(to)
     silent! call setpos('.', curpos)
-  elseif isdigit
-    execute 'normal! ' . abs(a:count) . (a:count > 0 ? "\<C-a>" : "\<C-x>")
   endif
 endfunction
 
