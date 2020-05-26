@@ -2,7 +2,7 @@
 " Filename: autoload/increx.vim
 " Author: itchyny
 " License: MIT License
-" Last Change: 2020/05/26 16:12:51.
+" Last Change: 2020/05/26 16:31:50.
 " =============================================================================
 
 let s:save_cpo = &cpo
@@ -28,16 +28,15 @@ function! increx#incr(count) abort
   let digitpos = match(line[max([col('.') - len(digitword) - 1, 0]):], '\d')
   let pos = digitpos >= 0 ? digitpos + col('.') - len(digitword) : -1
   let isdigit = digitpos >= 0
-  let [ from, to ] = [ '', '' ]
+  let [from, to] = ['', '']
   for words in get(g:, 'increx', s:increx)
     for word in words
       let pattern = '\C' . (word =~# '^\w' ? '\<' : '') . word . (word =~# '\w$' ? '\>' : '')
       let new = match(line[max([col('.') - len(word), 0]):], pattern)
       if new >= 0
         let newpos = max([col('.') - len(word), 0]) + new
-        let pos = pos >= 0 ? min([pos, newpos]) : newpos
-        if pos == newpos
-          let [ from, to, isdigit ] = [ word, words[(index(words, word) + a:count) % len(words)], 0 ]
+        if pos < 0 || newpos < pos
+          let [pos, from, to, isdigit] = [newpos, word, words[(index(words, word) + a:count) % len(words)], 0]
         endif
       endif
     endfor
