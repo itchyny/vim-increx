@@ -2,10 +2,10 @@
 " Filename: plugin/increx.vim
 " Author: itchyny
 " License: MIT License
-" Last Change: 2015/09/24 18:13:56.
+" Last Change: 2024/11/09 17:02:34.
 " =============================================================================
 
-if exists('g:loaded_increx') || v:version < 700
+if exists('g:loaded_increx') || v:version < 900
   finish
 endif
 let g:loaded_increx = 1

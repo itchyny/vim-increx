@@ -2,7 +2,7 @@
 " Filename: autoload/increx.vim
 " Author: itchyny
 " License: MIT License
-" Last Change: 2020/05/26 16:31:50.
+" Last Change: 2024/11/09 17:21:30.
 " =============================================================================
 
 let s:save_cpo = &cpo
@@ -12,46 +12,30 @@ let s:increx = [
       \ [ 'true', 'false' ],
       \ [ 'True', 'False' ],
       \ [ 'TRUE', 'FALSE' ],
-      \ [ 'and', 'or' ],
+      \ [ 'yes', 'no' ],
       \ [ 'on', 'off' ],
-      \ [ 'up', 'down' ],
-      \ [ 'before', 'after' ],
-      \ [ 'even', 'odd' ],
-      \ [ 'left', 'right' ],
-      \ [ 'height', 'width' ],
+      \ [ 'and', 'or' ],
       \ [ '&&', '||' ],
       \ ]
 
 function! increx#incr(count) abort
   let line = getline('.')
-  let digitword = matchstr(line[:col('.') - 1], '[0-9a-fx]*$')
-  let digitpos = match(line[max([col('.') - len(digitword) - 1, 0]):], '\d')
-  let pos = digitpos >= 0 ? digitpos + col('.') - len(digitword) : -1
-  let isdigit = digitpos >= 0
-  let [from, to] = ['', '']
+  let [pos, after] = [match(line, '\v\C%(\d+|0x\x+)%>.c|$'), '']
   for words in get(g:, 'increx', s:increx)
-    for word in words
-      let pattern = '\C' . (word =~# '^\w' ? '\<' : '') . word . (word =~# '\w$' ? '\>' : '')
-      let new = match(line[max([col('.') - len(word), 0]):], pattern)
-      if new >= 0
-        let newpos = max([col('.') - len(word), 0]) + new
-        if pos < 0 || newpos < pos
-          let [pos, from, to, isdigit] = [newpos, word, words[(index(words, word) + a:count) % len(words)], 0]
-        endif
-      endif
-    endfor
+    let pattern = join(mapnew(words, 'v:val =~# "\\<.\\+\\>" ? "\\<" . v:val . "\\>" '
+          \ . ': "[" . join(words, "") . "]\\@<!" . v:val . "[" . join(words, "") . "]\\@!"'), '\|')
+    let [word, newpos, newendpos] = matchstrpos(line, '\m\C\%(' . pattern . '\)\%>.c')
+    if 0 <= newpos && newpos < pos
+      let [pos, endpos, after] = [newpos, newendpos, words[(index(words, word) + a:count) % len(words)]]
+    endif
   endfor
-  if pos < 0
-    return
-  elseif isdigit
-    let start = col('.') - len(matchstr(line[:col('.') - 1], '[-0-9]*$'))
-    let reverse = line[start:] =~# '^\v\d+-\d+' && len(matchstr(line[start:], '^\v\d+')) < col('.') - start
-    execute 'normal! ' . abs(a:count) . (xor(a:count > 0, reverse) ? "\<C-a>" : "\<C-x>")
+  if after ==# ''
+    execute 'normal! ' . abs(a:count) . (xor(a:count > 0, line =~# '\v\C<\d*%<.c\d-\d+%>.c') ? "\<C-a>" : "\<C-x>")
   else
-    silent! call setline('.', (pos > 0 ? line[:pos - 1] : '') . to . line[pos + len(from):])
     let curpos = getcurpos()
-    let curpos[2] = pos + len(to)
-    silent! call setpos('.', curpos)
+    let curpos[2] = pos + len(after)
+    call setline('.', strpart(line, 0, pos) . after . strpart(line, endpos))
+    call setpos('.', curpos)
   endif
 endfunction
 
